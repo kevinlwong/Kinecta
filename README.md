@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Ancestor MVP
+
+**AI Ancestor** is a Next.js + Tailwind CSS web app that lets you **connect with a simulated ancestor** from your chosen heritage background via chat. This MVP demonstrates:
+
+* **Heritage & persona selection** (Hakka, Hokkien, Cantonese) with context (region, time period, occupation, traits)
+* **Chat interface** with simulated AI responses, typing indicator, and auto-scroll
+* **Zustand** for lightweight global state management
+* **Tailwind CSS** for utility-based styling and theme extensions
+* **Heroicons** for SVG icons
+* **TypeScript** for type safety
+
+---
+
+## Tech Stack
+
+| Technology        | Purpose                              |
+| ----------------- | ------------------------------------ |
+| Next.js (v14+)    | React framework, routing, API routes |
+| React (v18)       | UI components                        |
+| TypeScript        | Static typing                        |
+| Tailwind CSS (v3) | Utility-first CSS                    |
+| Zustand           | Global state management              |
+| Heroicons         | SVG icon library                     |
+| Node.js & npm     | Runtime & package management         |
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+* **Node.js** v16.8+ and **npm** v7+
+
+### Installation
+
+Clone the repo and install dependencies:
+
+```bash
+git clone https://github.com/<your-username>/ancestor-ai-mvp.git
+cd ancestor-ai-mvp
+npm install
+```
+
+### Environment Variables
+
+Create a `.env.local` in the project root with:
+
+```
+OPENAI_API_KEY=your_openai_api_key_here
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here  # optional for voice
+```
+
+### Development
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+ancestor-ai-mvp/
+├── .env.local           # Environment variables
+├── next.config.js       # Next.js config
+├── postcss.config.js    # PostCSS + Tailwind CSS
+├── tailwind.config.js   # Tailwind theme & content paths
+├── package.json         # Scripts & dependencies
+└── src/
+    ├── app/
+    │   ├── layout.tsx   # Root layout, global CSS import
+    │   ├── globals.css  # Tailwind directives & base styles
+    │   └── page.tsx     # Home component (selector & chat)
+    ├── components/
+    │   ├── HeritageSelector.tsx  # Heritage form
+    │   └── ChatInterface.tsx     # Chat UI
+    ├── store/
+    │   └── ancestorStore.ts     # Zustand store
+    ├── utils/                    # Cultural data, helpers
+    └── pages/api/                # Voice & chat API routes
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Custom Themes & Styles
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Tailwind’s `tailwind.config.js` includes custom colors:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```js
+colors: {
+  'heritage-gold':   '#D4A574',
+  'heritage-red':    '#C5282F',
+  'heritage-dark':   '#2C1810',
+  'heritage-light':  '#F5F1E8',
+},
+```
+
+Use utility classes like `bg-heritage-gold`, `text-heritage-dark`, and gradients (`heritage-gradient`).
+
