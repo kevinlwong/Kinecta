@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  html {
+    font-family: system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-heritage-light text-heritage-dark;
+  }
+}
+
+@layer components {
+  .chat-message {
+    @apply mb-4 animate-slide-up;
+  }
+  
+  .ancestor-message {
+    @apply bg-white border-l-4 border-heritage-gold shadow-sm;
+  }
+  
+  .user-message {
+    @apply bg-heritage-gold/10 border-l-4 border-heritage-red;
+  }
+  
+  .typing-indicator {
+    @apply flex items-center space-x-2 text-heritage-gold;
+  }
+  
+  .heritage-gradient {
+    @apply bg-gradient-to-r from-heritage-gold to-heritage-red;
+  }
+}
