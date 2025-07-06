@@ -17,7 +17,7 @@ export default function Home() {
             {/* Hero Section */}
             <div className="text-center mb-12 animate-fade-in">
               <h1 className="text-5xl font-bold mb-4 heritage-gradient bg-clip-text text-transparent">
-                AI Ancestor
+                Kinecta
               </h1>
               <p className="text-xl text-heritage-dark/70 mb-8 max-w-2xl mx-auto">
                 Bridge the generations. Connect with your heritage through meaningful conversations 
