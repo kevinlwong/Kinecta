@@ -1,6 +1,6 @@
-# AI Ancestor MVP
+# Kinecta MVP
 
-**AI Ancestor** is a Next.js + Tailwind CSS web app that lets you **connect with a simulated ancestor** from your chosen heritage background via chat. This MVP demonstrates:
+**Kinecta** is a Next.js + Tailwind CSS web app that lets you **connect with a simulated ancestor** from your chosen heritage background via chat. This MVP demonstrates:
 
 * **Heritage & persona selection** (Hakka, Hokkien, Cantonese) with context (region, time period, occupation, traits)
 * **Chat interface** with simulated AI responses, typing indicator, and auto-scroll
@@ -73,7 +73,7 @@ npm run start
 ## Project Structure
 
 ```
-ancestor-ai-mvp/
+kinecta/
 ├── .env.local           # Environment variables
 ├── next.config.js       # Next.js config
 ├── postcss.config.js    # PostCSS + Tailwind CSS
