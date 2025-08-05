@@ -2,7 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAncestorStore } from '@/store/ancestorStore'
+import { useUserStore } from '@/store/userStore'
 import { PaperAirplaneIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { SavedConversation, ConversationMessage } from '@/store/ancestorStore'
+import { DataItem } from '@/components/CulturalDatabase'
 
 interface Message {
   id: string
@@ -11,38 +14,46 @@ interface Message {
   timestamp: Date
 }
 
-interface ChatInterfaceProps {
+export interface ChatInterfaceProps {
   onBack: () => void
+  onEndConversation: (messages: Message[]) => void
+  onInject: (item: DataItem) => void
 }
 
-export default function ChatInterface({ onBack }: ChatInterfaceProps) {
-  const { ancestorPersona, selectedHeritage, resetSelection } = useAncestorStore()
+export default function ChatInterface({
+  onBack,
+  onEndConversation,
+  onInject
+}: ChatInterfaceProps) {
+  const { ancestorPersona, selectedHeritage, resetSelection, currentConversationId, setCurrentConversationId } = useAncestorStore()
+  const { profile } = useUserStore()
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
   }, [])
 
   useEffect(() => {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
+  // handle external injections (from CulturalDatabase)
   useEffect(() => {
-    if (ancestorPersona) {
-      const greeting = generateGreeting()
-      setTimeout(() => {
-        setMessages([{
-          id: '1',
-          content: greeting,
-          sender: 'ancestor',
-          timestamp: new Date(),
-        }])
-      }, 1000)
+    const handler = (e: CustomEvent) => {
+      setInputMessage(prev => prev + ' ' + e.detail)
     }
-  }, [ancestorPersona])
+    window.addEventListener('kinecta-inject', handler as any)
+    return () => window.removeEventListener('kinecta-inject', handler as any)
+  }, [])
 
   const generateGreeting = useCallback(() => {
     const greetings = {
@@ -61,22 +72,68 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
     }
 
     const list = greetings[selectedHeritage?.ethnicity as keyof typeof greetings]
-    return list ? list[Math.floor(Math.random() * list.length)] :
-      "My dear child, I am honored to speak with you across the generations. What would you like to know about our family's journey?"
+    return list
+      ? list[Math.floor(Math.random() * list.length)]
+      : "My dear child, I am honored to speak with you across the generations. What would you like to know about our family's journey?"
   }, [selectedHeritage])
 
-  const generateAncestorResponse = useCallback(async (userMessage: string) => {
-    setIsTyping(true)
-    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000))
+  useEffect(() => {
+    if (ancestorPersona) {
+      // Check if there are existing messages to resume (from store)
+      const storedMessages = localStorage.getItem(`kinecta_chat_${ancestorPersona.name}_${selectedHeritage?.ethnicity}`);
+      
+      if (storedMessages) {
+        // Resuming an existing conversation
+        try {
+          const parsed = JSON.parse(storedMessages);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const convertedMessages: Message[] = parsed.map((msg: ConversationMessage) => ({
+              id: msg.id,
+              content: msg.content,
+              sender: msg.sender,
+              timestamp: new Date(msg.timestamp)
+            }));
+            setMessages(convertedMessages);
+            // Clear the temporary storage after loading
+            localStorage.removeItem(`kinecta_chat_${ancestorPersona.name}_${selectedHeritage?.ethnicity}`);
+            return; // Exit early to prevent greeting from showing
+          }
+          // Clear the temporary storage even if messages were empty
+          localStorage.removeItem(`kinecta_chat_${ancestorPersona.name}_${selectedHeritage?.ethnicity}`);
+        } catch (error) {
+          console.error('Failed to load existing messages:', error);
+          // Clear the temporary storage on error
+          localStorage.removeItem(`kinecta_chat_${ancestorPersona.name}_${selectedHeritage?.ethnicity}`);
+        }
+      }
+      
+      // For new conversations, clear messages and show greeting
+      if (!storedMessages) {
+        // Clear any existing messages first
+        setMessages([]);
+        
+        // New conversation - clear current conversation ID and show greeting
+        if (currentConversationId) {
+          setCurrentConversationId(null);
+        }
+        
+        const greeting = generateGreeting()
+        setTimeout(() => {
+          setMessages([{
+            id: '1',
+            content: greeting,
+            sender: 'ancestor',
+            timestamp: new Date(),
+          }])
+        }, 1000)
+      }
+    } else {
+      // Clear messages when no ancestor is selected
+      setMessages([]);
+    }
+  }, [ancestorPersona, selectedHeritage, generateGreeting, currentConversationId, setCurrentConversationId])
 
-    // In a real implementation, call your AI here.
-    const response = generateSimulatedResponse(userMessage)
-
-    setIsTyping(false)
-    return response
-  }, [selectedHeritage])
-
-  const generateSimulatedResponse = (userMessage: string) => {
+  const generateSimulatedResponse = useCallback((userMessage: string) => {
     const responses = {
       hakka: [
         "Ah, my child, you remind me of the saying '客而家焉' - though we were guests in many lands, we made them our home. In Meizhou, our Hakka people learned to be resilient, to adapt while keeping our traditions. Perhaps this strength flows in your blood too, no?",
@@ -92,9 +149,62 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
       ],
     }
     const list = responses[selectedHeritage?.ethnicity as keyof typeof responses]
-    return list ? list[Math.floor(Math.random() * list.length)] :
-      "Your question touches my heart, dear child. In my time, we learned that life's greatest treasures are the bonds we share with family and the wisdom we pass down through generations."
-  }
+    return list
+      ? list[Math.floor(Math.random() * list.length)]
+      : "Your question touches my heart, dear child. In my time, we learned that life's greatest treasures are the bonds we share with family and the wisdom we pass down through generations."
+  }, [selectedHeritage])
+
+  const generateAncestorResponse = useCallback(async (userMessage: string) => {
+    setIsTyping(true)
+    
+    try {
+      const response = await fetch('/api/ollama-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map(msg => ({
+              role: msg.sender === 'user' ? 'user' : 'assistant',
+              content: msg.content
+            })),
+            { role: 'user', content: userMessage }
+          ],
+          ancestorPersona,
+          selectedHeritage,
+          userProfile: profile ? {
+            name: profile.name,
+            age: profile.age,
+            location: profile.location,
+            occupation: profile.occupation,
+            personalBackground: profile.personalBackground,
+            familyBackground: profile.familyBackground,
+            culturalBackground: profile.culturalBackground,
+            languages: profile.languages
+          } : undefined
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
+      setIsTyping(false)
+      return data.message
+    } catch (error) {
+      console.error('Failed to get AI response:', error)
+      setIsTyping(false)
+      // Fallback to simulated response if API fails
+      return generateSimulatedResponse(userMessage)
+    }
+  }, [messages, ancestorPersona, selectedHeritage, profile, generateSimulatedResponse])
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return
@@ -105,7 +215,6 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
       sender: 'user',
       timestamp: new Date(),
     }
-
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
 
@@ -116,8 +225,11 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
       sender: 'ancestor',
       timestamp: new Date(),
     }
-
     setMessages(prev => [...prev, ancestorMessage])
+
+    // persist conversation with all messages
+    const allMessages = [...messages, userMessage, ancestorMessage];
+    onEndConversation(allMessages)
   }
 
   if (!ancestorPersona) return null
@@ -145,14 +257,14 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
             </div>
           </div>
           <div className="text-right text-sm text-white/70">
-            <p>"Blood is thicker than water"</p>
+            <p>&ldquo;Blood is thicker than water&rdquo;</p>
             <p className="font-chinese">血濃於水</p>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="h-96 overflow-y-auto p-6 space-y-4">
+      <div ref={messagesContainerRef} className="h-96 overflow-y-auto p-6 space-y-4">
         {messages.map(message => (
           <div
             key={message.id}
@@ -162,16 +274,22 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
                   {message.sender === 'ancestor' ? (
-                    <div className="w-8 h-8 bg-heritage-gold rounded-full flex items-center justify-center text-white font-bold">祖</div>
+                    <div className="w-8 h-8 bg-heritage-gold rounded-full flex items-center justify-center text-white font-bold">
+                      祖
+                    </div>
                   ) : (
-                    <div className="w-8 h-8 bg-heritage-red rounded-full flex items-center justify-center text-white font-bold">你</div>
+                    <div className="w-8 h-8 bg-heritage-red rounded-full flex items-center justify-center text-white font-bold">
+                      你
+                    </div>
                   )}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-heritage-dark/60 mb-1">
                     {message.sender === 'ancestor' ? 'Ancestor' : 'You'}
                   </p>
-                  <p className="text-heritage-dark leading-relaxed">{message.content}</p>
+                  <p className="text-heritage-dark leading-relaxed">
+                    {message.content}
+                  </p>
                 </div>
               </div>
             </div>
@@ -180,7 +298,9 @@ export default function ChatInterface({ onBack }: ChatInterfaceProps) {
 
         {isTyping && (
           <div className="typing-indicator">
-            <div className="w-8 h-8 bg-heritage-gold rounded-full flex items-center justify-center text-white font-bold">祖</div>
+            <div className="w-8 h-8 bg-heritage-gold rounded-full flex items-center justify-center text-white font-bold">
+              祖
+            </div>
             <div className="flex space-x-1">
               <div className="w-2 h-2 bg-heritage-gold rounded-full animate-bounce"></div>
               <div className="w-2 h-2 bg-heritage-gold rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>

@@ -9,7 +9,7 @@ import {
 } from '@/utils/culturalData'
 
 // Unified data item type
-interface DataItem {
+export interface DataItem {
   content: string
   type: string
   heritage?: string

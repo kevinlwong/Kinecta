@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react'
 import { format } from 'date-fns'
-import { useAncestorStore } from '@/store/ancestorStore'
-import { BookmarkIcon, ShareIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import { useAncestorStore, SavedConversation as StoreSavedConversation } from '@/store/ancestorStore'
+import { BookmarkIcon, ShareIcon, ArrowDownTrayIcon, TrashIcon, PlayIcon } from '@heroicons/react/24/outline'
+import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
 
 export interface SavedConversation {
   id: string
@@ -17,9 +18,11 @@ export interface SavedConversation {
 interface Props {
   onBookmark: (id: string) => void
   onShare: (id: string) => void
+  onDelete: (id: string) => void
+  onResume: (conversation: StoreSavedConversation) => void
 }
 
-export default function ConversationHistory({ onBookmark, onShare }: Props) {
+export default function ConversationHistory({ onBookmark, onShare, onDelete, onResume }: Props) {
   const { conversations, loadConversations } = useAncestorStore()
 
   useEffect(() => {
@@ -52,11 +55,26 @@ export default function ConversationHistory({ onBookmark, onShare }: Props) {
                 <p className="text-sm text-heritage-dark/80 mt-2">{c.preview}</p>
               </div>
               <div className="flex space-x-2">
+                {/* Only show resume button for conversations with full data */}
+                {c.ancestorPersona && c.selectedHeritage && c.messages && (
+                  <button
+                    onClick={() => onResume(c)}
+                    className="p-2 hover:bg-heritage-gold/10 rounded-lg text-heritage-gold hover:text-heritage-gold/80"
+                    title="Resume conversation"
+                  >
+                    <PlayIcon className="h-5 w-5" />
+                  </button>
+                )}
                 <button
                   onClick={() => onBookmark(c.id)}
                   className="p-2 hover:bg-heritage-gold/10 rounded-lg"
+                  title={c.bookmarked ? "Remove bookmark" : "Bookmark conversation"}
                 >
-                  <BookmarkIcon className="h-5 w-5" />
+                  {c.bookmarked ? (
+                    <BookmarkSolidIcon className="h-5 w-5 text-heritage-gold" />
+                  ) : (
+                    <BookmarkIcon className="h-5 w-5" />
+                  )}
                 </button>
                 <button
                   onClick={() => onShare(c.id)}
@@ -67,8 +85,20 @@ export default function ConversationHistory({ onBookmark, onShare }: Props) {
                 <button
                   onClick={() => exportConversation(c)}
                   className="p-2 hover:bg-heritage-gold/10 rounded-lg"
+                  title="Export conversation"
                 >
                   <ArrowDownTrayIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete this conversation? This action cannot be undone.')) {
+                      onDelete(c.id)
+                    }
+                  }}
+                  className="p-2 hover:bg-red-100 rounded-lg text-red-600 hover:text-red-700"
+                  title="Delete conversation"
+                >
+                  <TrashIcon className="h-5 w-5" />
                 </button>
               </div>
             </div>
